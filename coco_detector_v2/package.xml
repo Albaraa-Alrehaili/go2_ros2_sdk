@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>coco_detector</name>
+  <version>0.0.0</version>
+  <description>COCO detector</description>
+
+  <maintainer email="julian.w.francis@gmail.com">julian</maintainer>
+  <license>MIT</license>
+
+  <!-- runtime dependencies -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>python3-torch</exec_depend>
+  <exec_depend>python3-torchvision</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

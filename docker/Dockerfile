@@ -9,12 +9,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     portaudio19-dev \
     mesa-utils \
     libgl1-mesa-glx \
-    ros-humble-rmw-cyclonedds-cpp
     libgl1-mesa-dri \
+    libopencv-dev \
+    ffmpeg \
+    ros-humble-rqt-gui \
+    ros-humble-rqt-image-view \
     ros-humble-rviz2 \
-    ros-humble-vision-msgs \
     ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-vision-msgs \
+    ros-humble-image-transport \
+    ros-humble-cv-bridge \
+    ros-humble-image-tools \
+    ros-humble-image-view \
+    ros-humble-compressed-image-transport \
+    ros-humble-camera-info-manager \
+    ros-humble-tf-transformations \
+    ros-humble-vision-opencv \
+    ros-humble-diagnostic-updater \
     software-properties-common
+
 
 # Create workspace
 WORKDIR /ros2_ws
