@@ -9,12 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     portaudio19-dev \
     mesa-utils \
     libgl1-mesa-glx \
+    ros-humble-rmw-cyclonedds-cpp
     libgl1-mesa-dri \
     ros-humble-rviz2 \
+    ros-humble-vision-msgs \
+    ros-humble-rmw-cyclonedds-cpp \
     software-properties-common
-
-# Install specific numpy version first
-RUN pip install 'numpy<2.0.0'
 
 # Create workspace
 WORKDIR /ros2_ws
