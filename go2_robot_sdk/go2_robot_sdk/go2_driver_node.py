@@ -512,98 +512,169 @@ class RobotBaseNode(Node):
 
                 self.voxel_pub[i].publish(voxel_msg)
 
+    # def publish_joint_state_webrtc(self):
+
+    #     for i in range(len(self.robot_sport_state)):
+    #         if self.robot_sport_state[str(i)]:
+    #             joint_state = JointState()
+    #             joint_state.header.stamp = self.get_clock().now().to_msg()
+
+    #             fl_foot_pos_array = [
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][3],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][4],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][5]
+    #             ]
+
+    #             FL_hip_joint, FL_thigh_joint, FL_calf_joint = get_robot_joints(
+    #                 fl_foot_pos_array,
+    #                 0
+    #             )
+
+    #             fr_foot_pos_array = [
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][0],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][1],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][2]
+    #             ]
+
+    #             FR_hip_joint, FR_thigh_joint, FR_calf_joint = get_robot_joints(
+    #                 fr_foot_pos_array,
+    #                 1
+    #             )
+
+    #             rl_foot_pos_array = [
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][9],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][10],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][11]
+    #             ]
+
+    #             RL_hip_joint, RL_thigh_joint, RL_calf_joint = get_robot_joints(
+    #                 rl_foot_pos_array,
+    #                 2
+    #             )
+
+    #             rr_foot_pos_array = [
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][6],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][7],
+    #                 self.robot_sport_state[str(
+    #                     i)]["data"]["foot_position_body"][8]
+    #             ]
+
+    #             RR_hip_joint, RR_thigh_joint, RR_calf_joint = get_robot_joints(
+    #                 rr_foot_pos_array,
+    #                 3
+    #             )
+
+    #             if self.conn_mode == 'single':
+    #                 joint_state.name = [
+    #                     'FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint',
+    #                     'FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint',
+    #                     'RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint',
+    #                     'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint',
+    #                 ]
+    #             else:
+    #                 joint_state.name = [
+    #                     f'robot{str(i)}/FL_hip_joint',
+    #                     f'robot{str(i)}/FL_thigh_joint',
+    #                     f'robot{str(i)}/FL_calf_joint',
+    #                     f'robot{str(i)}/FR_hip_joint',
+    #                     f'robot{str(i)}/FR_thigh_joint',
+    #                     f'robot{str(i)}/FR_calf_joint',
+    #                     f'robot{str(i)}/RL_hip_joint',
+    #                     f'robot{str(i)}/RL_thigh_joint',
+    #                     f'robot{str(i)}/RL_calf_joint',
+    #                     f'robot{str(i)}/RR_hip_joint',
+    #                     f'robot{str(i)}/RR_thigh_joint',
+    #                     f'robot{str(i)}/RR_calf_joint']
+
+    #             joint_state.position = [
+    #                 FL_hip_joint, FL_thigh_joint, FL_calf_joint,
+    #                 FR_hip_joint, FR_thigh_joint, FR_calf_joint,
+    #                 RL_hip_joint, RL_thigh_joint, RL_calf_joint,
+    #                 RR_hip_joint, RR_thigh_joint, RR_calf_joint,
+    #             ]
+    #             self.joint_pub[i].publish(joint_state)
+    
     def publish_joint_state_webrtc(self):
+        # Determine which source of robot data is available
+        robot_data_source = None
+        if hasattr(self, 'robot_low_cmd') and self.robot_low_cmd:
+            robot_data_source = self.robot_low_cmd
+        elif hasattr(self, 'robot_sport_state') and self.robot_sport_state:
+            robot_data_source = self.robot_sport_state
+        else:
+            self.get_logger().error("No valid robot data source found for joint state publishing.")
+            return
 
-        for i in range(len(self.robot_sport_state)):
-            if self.robot_sport_state[str(i)]:
-                joint_state = JointState()
-                joint_state.header.stamp = self.get_clock().now().to_msg()
+        for i in range(len(robot_data_source)):
+            str_i = str(i)
+            if str_i not in robot_data_source or not robot_data_source[str_i]:
+                self.get_logger().warning(f"No data available for robot index {str_i}")
+                continue
 
-                fl_foot_pos_array = [
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][3],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][4],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][5]
+            joint_state = JointState()
+            joint_state.header.stamp = self.get_clock().now().to_msg()
+            data = robot_data_source[str_i]["data"]
+
+            # Use motor_state
+            if "motor_state" in data:
+                motor_state = data["motor_state"]
+                joint_state.position = [
+                    float(motor_state[3]['q']), float(motor_state[4]['q']), float(motor_state[5]['q']),  # FL
+                    float(motor_state[0]['q']), float(motor_state[1]['q']), float(motor_state[2]['q']),  # FR
+                    float(motor_state[9]['q']), float(motor_state[10]['q']), float(motor_state[11]['q']),  # RL
+                    float(motor_state[6]['q']), float(motor_state[7]['q']), float(motor_state[8]['q']),  # RR
                 ]
+            elif "foot_position_body" in data:
+                fl = data["foot_position_body"][3:6]
+                fr = data["foot_position_body"][0:3]
+                rl = data["foot_position_body"][9:12]
+                rr = data["foot_position_body"][6:9]
 
-                FL_hip_joint, FL_thigh_joint, FL_calf_joint = get_robot_joints(
-                    fl_foot_pos_array,
-                    0
-                )
-
-                fr_foot_pos_array = [
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][0],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][1],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][2]
-                ]
-
-                FR_hip_joint, FR_thigh_joint, FR_calf_joint = get_robot_joints(
-                    fr_foot_pos_array,
-                    1
-                )
-
-                rl_foot_pos_array = [
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][9],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][10],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][11]
-                ]
-
-                RL_hip_joint, RL_thigh_joint, RL_calf_joint = get_robot_joints(
-                    rl_foot_pos_array,
-                    2
-                )
-
-                rr_foot_pos_array = [
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][6],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][7],
-                    self.robot_sport_state[str(
-                        i)]["data"]["foot_position_body"][8]
-                ]
-
-                RR_hip_joint, RR_thigh_joint, RR_calf_joint = get_robot_joints(
-                    rr_foot_pos_array,
-                    3
-                )
-
-                if self.conn_mode == 'single':
-                    joint_state.name = [
-                        'FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint',
-                        'FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint',
-                        'RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint',
-                        'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint',
-                    ]
-                else:
-                    joint_state.name = [
-                        f'robot{str(i)}/FL_hip_joint',
-                        f'robot{str(i)}/FL_thigh_joint',
-                        f'robot{str(i)}/FL_calf_joint',
-                        f'robot{str(i)}/FR_hip_joint',
-                        f'robot{str(i)}/FR_thigh_joint',
-                        f'robot{str(i)}/FR_calf_joint',
-                        f'robot{str(i)}/RL_hip_joint',
-                        f'robot{str(i)}/RL_thigh_joint',
-                        f'robot{str(i)}/RL_calf_joint',
-                        f'robot{str(i)}/RR_hip_joint',
-                        f'robot{str(i)}/RR_thigh_joint',
-                        f'robot{str(i)}/RR_calf_joint']
+                FL_hip, FL_thigh, FL_calf = get_robot_joints(fl, 0)
+                FR_hip, FR_thigh, FR_calf = get_robot_joints(fr, 1)
+                RL_hip, RL_thigh, RL_calf = get_robot_joints(rl, 2)
+                RR_hip, RR_thigh, RR_calf = get_robot_joints(rr, 3)
 
                 joint_state.position = [
-                    FL_hip_joint, FL_thigh_joint, FL_calf_joint,
-                    FR_hip_joint, FR_thigh_joint, FR_calf_joint,
-                    RL_hip_joint, RL_thigh_joint, RL_calf_joint,
-                    RR_hip_joint, RR_thigh_joint, RR_calf_joint,
+                    float(FL_hip), float(FL_thigh), float(FL_calf),
+                    float(FR_hip), float(FR_thigh), float(FR_calf),
+                    float(RL_hip), float(RL_thigh), float(RL_calf),
+                    float(RR_hip), float(RR_thigh), float(RR_calf),
                 ]
-                self.joint_pub[i].publish(joint_state)
+            else:
+                self.get_logger().error(f"Robot {str_i} has no 'motor_state' or 'foot_position_body'. Cannot publish joint state.")
+                continue
+
+            # Assign joint names
+            if self.conn_mode == 'single':
+                joint_state.name = [
+                    'FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint',
+                    'FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint',
+                    'RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint',
+                    'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint',
+                ]
+            else:
+                joint_state.name = [
+                    f'robot{str_i}/FL_hip_joint', f'robot{str_i}/FL_thigh_joint', f'robot{str_i}/FL_calf_joint',
+                    f'robot{str_i}/FR_hip_joint', f'robot{str_i}/FR_thigh_joint', f'robot{str_i}/FR_calf_joint',
+                    f'robot{str_i}/RL_hip_joint', f'robot{str_i}/RL_thigh_joint', f'robot{str_i}/RL_calf_joint',
+                    f'robot{str_i}/RR_hip_joint', f'robot{str_i}/RR_thigh_joint', f'robot{str_i}/RR_calf_joint',
+                ]
+
+            self.joint_pub[i].publish(joint_state)
+
+
 
     def publish_webrtc_commands(self, robot_num):
         while True:
